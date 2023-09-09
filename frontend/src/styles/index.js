@@ -12,7 +12,7 @@ export const radioGroupBoxStyle = {
 };
 //* Home Page  Style
 export const paper = {
-  height: 200,
+  height: 230,
   width: 300,
   boxShadow: theme.shadows[2], 
     transition: 'box-shadow 0.3s ease', 
@@ -35,4 +35,11 @@ export const titleCard = {
 export const bodyCard = {
   fontSize: 16,
   fontWeight: 600,
+  textAlign: "left"
+};
+export const bodyCardCap = {
+  fontSize: 16,
+  fontWeight: 600,
+  textTransform: "capitalize",
+  textAlign: "right"
 };

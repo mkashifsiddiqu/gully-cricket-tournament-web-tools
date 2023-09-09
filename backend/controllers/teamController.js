@@ -97,8 +97,18 @@ export const createPlayer = async (req, res) => {
     if (!team) {
       return res.status(404).json({ message: "Team not found" });
     }
-    team.players = team.players.concat(req.body.playerList);
-    console.log(team.players);
+    // team.players = team.players.concat(req.body.playerList);
+    // console.log(team.players);
+    // await team.save();
+    const excludedPlayerNames = team.players.map((player) => player.value);
+
+    // Filter the incoming playerList array to exclude specific names
+    const filteredPlayerList = req.body.playerList.filter(
+      (player) => !excludedPlayerNames.includes(player.value)
+    );
+  
+    // Concatenate the filtered playerList with the existing team players array
+    team.players = team.players.concat(filteredPlayerList);
     await team.save();
     res.status(201).json(team);
   } catch (err) {

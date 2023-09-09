@@ -18,6 +18,7 @@ import SportsCricketIcon from "@mui/icons-material/SportsCricket";
 import { useTheme } from "@mui/material/styles";
 import { useMediaQuery } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { projectTitle } from "../constants";
 const pages = ["cricket tournament web tool"];
 const settings = ["Profile", "Logout"];
 
@@ -89,7 +90,7 @@ function Header({ handleSidebar }) {
               textDecoration: "none",
             }}
           >
-            Gully Cricket Tournament Web Tool
+            {projectTitle}
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }} />
           <Box sx={{ flexGrow: 0 }}>

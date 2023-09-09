@@ -12,3 +12,5 @@ export const RUN_OUT = "Run Out";
 
 // common
 export const DOMAIN_NAME = "http://localhost:5000";
+
+export const projectTitle = "Cricket Tournament Web Tool"; 

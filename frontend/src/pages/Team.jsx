@@ -14,9 +14,9 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { DOMAIN_NAME } from "../constants";
 // Todo : Delete Fn , Edit fn according to Api
 // Contact to umar
-const DOMAIN_NAME = "http://localhost:5000";
 const Team = () => {
   //for Toast
   const [open, setOpen] = useState(false);

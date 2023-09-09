@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../styles/live-match-monitoring.css";
-import { radioGroupBoxStyle } from "../styles";
+import axios from "axios";
 import {
   FormControl,
   FormControlLabel,
@@ -11,12 +10,16 @@ import {
   IconButton,
   Button,
   Divider,
+  MenuItem,
+  TextField,
+  Typography,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { pink } from "@mui/material/colors";
 import { useNavigate, useParams } from "react-router-dom";
-import Autosuggest from "react-autosuggest";
+import "../styles/live-match-monitoring.css";
+import { radioGroupBoxStyle } from "../styles";
 import {
   BATTING,
   OUT,
@@ -28,68 +31,32 @@ import {
   DOMAIN_NAME,
 } from "../constants";
 import MathUtil from "../util";
-import axios from "axios";
 import { inning, teamDetailsFormat } from "../data";
 
-// S
-
+// Main
 const ScoreBoard = () => {
   // Basic
   const history = useNavigate(); //link
-  const { id } = useParams(); // match id
+  const { matchId } = useParams(); // match id
   //local db match details for Quick Start
   let data = JSON.parse(localStorage.getItem("data"));
+
   // use data for Live Match
   const { batting, team1, team2 } = data;
   const maxOver = parseInt(data.maxOver);
   // State for Full Match Details from Database
   const [fullMatchDetail, setFullMatchDetail] = useState(teamDetailsFormat);
-  // Players Details for Match
-  const [team1Detail, setTeam1Detail] = useState([{ _id: "", value: "" }]);
-  const [team2Detail, setTeam2Detail] = useState([{ _id: "", value: "" }]);
-  // *==================
-  // END POINT For Initialize Match
-  //=================
-  const fetchMatchById = async () => {
-    try {
-      const response = await axios.get(DOMAIN_NAME + `/api/matches/${id}`);
-      setFullMatchDetail(response.data);
-    } catch (err) {
-      console.log("Error fetching match details.", err);
-    }
-  };
-  const handleFetchTeamsDetails = async () => {
-    try {
-      const response1 = await axios.get(
-        `${DOMAIN_NAME}/api/teams/player-teams/${fullMatchDetail.team1name}/players`
-      );
-      const response2 = await axios.get(
-        `${DOMAIN_NAME}/api/teams/player-teams/${fullMatchDetail.team2name}/players`
-      );
-      setTeam1Detail(response1.data);
-      setTeam2Detail(response2.data);
-    } catch (error) {
-      console.log("Error fetching team details:", error);
-    }
-  };
-  useEffect(() => {
-    fetchMatchById();
-    const endInningButton = document.getElementById("end-inning");
-    endInningButton.disabled = true;
-  }, []);
-  useEffect(() => {
-    if (fullMatchDetail.team1name !== "" && fullMatchDetail.team2name !== "") {
-      handleFetchTeamsDetails();
-    }
-  }, [fullMatchDetail]);
-  // #End of fetching details
-
+  // Match end and
+  // Players Details for Match\
+  const [batting_Details_Current, setBatting_Details_Current] = useState([]);
+  const [blowing_Details_Current, setBlowing_Details_Current] = useState([]);
   // State for Inning details
   const [inningNo, setInningNo] = useState(1);
   const [match, setMatch] = useState({
-    inning1: inning,
-    inning2: inning,
+    inning1: { batters: [], bowlers: [] },
+    inning2: { batters: [], bowlers: [] },
   });
+  //****** */
   // for Live Score
   const [currentRunStack, setCurrentRunStack] = useState([]); // [0,1,2,3,4] data format
   const [totalRuns, setTotalRuns] = useState(0);
@@ -118,168 +85,280 @@ const ScoreBoard = () => {
   const [remainingRuns, setRemainingRuns] = useState(0);
   const [strikeValue, setStrikeValue] = React.useState("strike");
   const [isNoBall, setNoBall] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
   const [hasNameSuggested, setNameSuggested] = useState(false);
   const [hasMatchEnded, setMatchEnded] = useState(false);
   // END OF COMMON State
   // Batting Player
   const [player1Team, setPlayer1Team] = useState("");
   const [player2Team, setPlayer2Team] = useState("");
-
-  // Setting for DashBoard or Score Board Manage
-  // Fucntion for Run Score Board
-  const handleEndInning = (e) => {
-    const endInningButton = document.getElementById("end-inning");
-
-    if (endInningButton.textContent === "Reset") {
-      history("/");
-      return;
+  // *==================
+  // END POINT For Initialize Match
+  //=================
+  const fetchMatchById = async () => {
+    try {
+      const response = await axios.get(DOMAIN_NAME + `/api/matches/${matchId}`);
+      setFullMatchDetail(response.data);
+    } catch (err) {
+      console.log("Error fetching match details.", err);
     }
+  };
+  const handleFetchTeamsDetails = async () => {
+    try {
+      const response1 = await axios.get(
+        `${DOMAIN_NAME}/api/teams/player-teams/${fullMatchDetail.team1name}/players`
+      );
+      const response2 = await axios.get(
+        `${DOMAIN_NAME}/api/teams/player-teams/${fullMatchDetail.team2name}/players`
+      );
+      // Which is Team is going for Batting or boweling
+      if (fullMatchDetail.team1name == batting) {
+        setBatting_Details_Current(response1.data);
+        setBlowing_Details_Current(response2.data);
+      } else {
+        setBatting_Details_Current(response2.data);
+        setBlowing_Details_Current(response1.data);
+      }
+    } catch (error) {
+      console.log("Error fetching team details:", error);
+    }
+  };
+  useEffect(() => {
+    fetchMatchById();
+    const endInningButton = document.getElementById("end-inning");
+    endInningButton.disabled = true;
+  }, []);
+  useEffect(() => {
+    if (fullMatchDetail.team1name !== "" && fullMatchDetail.team2name !== "") {
+      handleFetchTeamsDetails();
+    }
+  }, [fullMatchDetail]);
+  // =================================Winner Team Post==================================
+  const WinnerTeamPutRequest =async ()=>{
+      try {
+        let WinnerTeamGlobal = "Match Tied";
+        if (wicketCount < 10 && overCount <= maxOver && totalRuns >= target) {
+             WinnerTeamGlobal = chessingTeam;
+        }
+        if ((wicketCount >= 10 || overCount >= maxOver) && totalRuns < target - 1) {
+           WinnerTeamGlobal = scoringTeam;
+          
+        }
+        if (wicketCount < 10 && overCount === maxOver && totalRuns === target - 1) {
+          WinnerTeamGlobal = "Match Tied";
+        }
+       console.log("Winner Team Name :",WinnerTeamGlobal);
+        const responseWinner = await axios.put(
+          `${DOMAIN_NAME}/api/matches/${matchId}`,
+          { winnerTeamName : WinnerTeamGlobal }
+        );
+        console.log("responseWinner :", responseWinner);
+        
+      } catch (error) {
+        console.error("Error sending PUT request:", error);
+        
+      }
+  }
+  //=============================Player Record Post======================================
+  const sendPostRequest = async () => {
+    try {
+      // Send a POST request to the new API route
+      const response = await axios.post(DOMAIN_NAME + "/api/player", match);
+      console.log("Response from POST request:", response.data);
+    } catch (error) {
+      console.error("Error sending POST request:", error);
+    }
+  };
+  //================================================================================
+  // Setting for DashBoard or Score Board Manage
+  // * =====================================================================================
+  // Function for Run Score Board
+  const handleEndInning = () => {
+    const endInningButton = document.getElementById("end-inning");
+    if (endInningButton.textContent === "Reset") {
+      sendPostRequest();
+      WinnerTeamPutRequest();
 
-    const addBatterToBatters = (batter) => {
-      if (batter.id !== undefined) {
+      // Log the match data after 15 seconds
+      setTimeout(() => {
+        history("/");
+      }, 15000);
+    } else {
+      if (batter1.id !== undefined) {
+        const { id, name, run, ball, four, six, strikeRate, onStrike } =
+          batter1;
         batters.push({
-          ...batter,
+          id,
+          name,
+          run,
+          ball,
+          four,
+          six,
+          strikeRate,
+          onStrike,
+          battingOrder: batter1.battingOrder,
           battingStatus: BATTING,
         });
       }
-    };
-
-    addBatterToBatters(batter1);
-    addBatterToBatters(batter2);
-
-    if (bowler.id !== undefined) {
-      const currentDisplayOver =
-        Math.round((ballCount === 6 ? 1 : ballCount * 0.1) * 10) / 10;
-      let isMaidenOver = true;
-      let countWicket = 0;
-      let countNoBall = 0;
-      let countWide = 0;
-      const deliveries = ["1", "2", "3", "4", "6", "wd"];
-
-      for (let delivery of currentRunStack) {
-        delivery = delivery.toString();
-        if (deliveries.includes(delivery) || delivery.includes("nb")) {
+      if (batter2.id !== undefined) {
+        batters.push({
+          id: batter2.id,
+          name: batter2.name,
+          run: batter2.run,
+          ball: batter2.ball,
+          four: batter2.four,
+          six: batter2.six,
+          strikeRate: batter2.strikeRate,
+          onStrike: batter2.onStrike,
+          battingOrder: batter2.battingOrder,
+          battingStatus: BATTING,
+        });
+      }
+      if (bowler.id !== undefined) {
+        const currentDisplayOver =
+          Math.round((ballCount === 6 ? 1 : ballCount * 0.1) * 10) / 10;
+        let isMaidenOver = true;
+        let countWicket = 0;
+        let countNoBall = 0;
+        let countWide = 0;
+        const deliveries = ["1", "2", "3", "4", "6", "wd"];
+        for (let delivery of currentRunStack) {
+          delivery = delivery.toString();
+          if (deliveries.includes(delivery) || delivery.includes("nb")) {
+            isMaidenOver = false;
+          }
+          if (delivery === "W") {
+            countWicket++;
+          }
+          if (delivery.includes("nb")) {
+            countNoBall++;
+          }
+          if (delivery.includes("wd")) {
+            countWide++;
+          }
+        }
+        if (ballCount !== 6) {
           isMaidenOver = false;
         }
-        if (delivery === "W") {
-          countWicket++;
-        }
-        if (delivery.includes("nb")) {
-          countNoBall++;
-        }
-        if (delivery.includes("wd")) {
-          countWide++;
-        }
-      }
-
-      if (ballCount !== 6) {
-        isMaidenOver = false;
-      }
-
-      const index = bowlers.findIndex((blr) => blr.id === bowler.id);
-
-      if (index !== -1) {
-        const existingBowler = bowlers[index];
-        const { maiden, wicket, noBall, wide, over } = existingBowler;
-        const bowlerTotalOver = over + ballCount / 6;
-        existingBowler.over = existingBowler.over + currentDisplayOver;
-        existingBowler.maiden = isMaidenOver ? maiden + 1 : maiden;
-        existingBowler.run = existingBowler.run + runsByOver;
-        existingBowler.wicket = wicket + countWicket;
-        existingBowler.noBall = noBall + countNoBall;
-        existingBowler.wide = wide + countWide;
-        existingBowler.economy =
-          Math.round((existingBowler.run / bowlerTotalOver) * 100) / 100;
-        bowlers[index] = existingBowler;
-        setBowlers(bowlers);
-      } else {
-        if (ballCount !== 6) {
-          bowlers.push({
-            id: bowler.id,
-            name: bowler.name,
-            over: currentDisplayOver,
-            maiden: isMaidenOver ? 1 : 0,
-            run: runsByOver,
-            wicket: countWicket,
-            noBall: countNoBall,
-            wide: countWide,
-            economy: Math.round((runsByOver / (ballCount / 6)) * 100) / 100,
-          });
+        const index = bowlers.findIndex((blr) => {
+          return blr.id === bowler.id;
+        });
+        if (index !== -1) {
+          const existingBowler = bowlers[index];
+          const { maiden, wicket, noBall, wide, over } = existingBowler;
+          const bowlerTotalOver = over + ballCount / 6;
+          existingBowler.over = existingBowler.over + currentDisplayOver;
+          existingBowler.maiden = isMaidenOver ? maiden + 1 : maiden;
+          existingBowler.run = existingBowler.run + runsByOver;
+          existingBowler.wicket = wicket + countWicket;
+          existingBowler.noBall = noBall + countNoBall;
+          existingBowler.wide = wide + countWide;
+          existingBowler.economy =
+            Math.round((existingBowler.run / bowlerTotalOver) * 100) / 100;
+          bowlers[index] = existingBowler;
           setBowlers(bowlers);
+        } else {
+          if (ballCount !== 6) {
+            bowlers.push({
+              id: bowler.id,
+              name: bowler.name,
+              over: currentDisplayOver,
+              maiden: isMaidenOver ? 1 : 0,
+              run: runsByOver,
+              wicket: countWicket,
+              noBall: countNoBall,
+              wide: countWide,
+              economy: Math.round((runsByOver / (ballCount / 6)) * 100) / 100,
+            });
+            setBowlers(bowlers);
+          }
         }
       }
-    }
-
-    const calculateInningData = () => {
-      const totalFours = batters
-        .map((batter) => batter.four)
-        .reduce((prev, next) => prev + next);
-      const totalSixes = batters
-        .map((batter) => batter.six)
-        .reduce((prev, next) => prev + next);
-
       if (inningNo === 1) {
-        return {
-          inning1: {
-            runs: totalRuns,
-            wickets: wicketCount,
-            runRate: crr,
-            overs: totalOvers,
-            four: totalFours,
-            six: totalSixes,
-            extra: extras,
-            batters,
-            bowlers,
-          },
-        };
+        setMatch((state) => {
+          const totalFours = batters
+            .map((batter) => batter.four)
+            .reduce((prev, next) => prev + next);
+          const totalSixes = batters
+            .map((batter) => batter.four)
+            .reduce((prev, next) => prev + next);
+          return {
+            ...state,
+            inning1: {
+              runs: totalRuns,
+              wickets: wicketCount,
+              runRate: crr,
+              overs: totalOvers,
+              four: totalFours,
+              six: totalSixes,
+              extra: extras,
+              batters,
+              bowlers,
+            },
+          };
+        });
+        setBatting_Details_Current(blowing_Details_Current);
+        setBlowing_Details_Current(batting_Details_Current);
+        setInningNo(2);
+        setCurrentRunStack([]);
+        setTotalRuns(0);
+        setExtras({ total: 0, wide: 0, noBall: 0 });
+        setRunsByOver(0);
+        setWicketCount(0);
+        setTotalOvers(0);
+        setBallCount(0);
+        setOverCount(0);
+        setRecentOvers([]);
+        setBatter1({});
+        setBatter2({});
+        setBatters([]);
+        setBowlers([]);
+        setBattingOrder(0);
+        setInputBowler("");
+        setBowler({});
+        setRemainingBalls(maxOver * 6);
+        setRemainingRuns(totalRuns + 1);
+        const bowlerNameElement = document.querySelector(
+          ".react-autosuggest__input"
+        );
+        bowlerNameElement.disabled = false;
+        const batter1NameElement = document.getElementById("batter1Name");
+        batter1NameElement.value = "";
+        batter1NameElement.disabled = false;
+        const batter2NameElement = document.getElementById("batter2Name");
+        batter2NameElement.value = "";
+        batter2NameElement.disabled = false;
+        setStrikeValue("strike");
+        endInningButton.disabled = true;
       } else {
-        return {
-          inning2: {
-            runs: totalRuns,
-            wickets: wicketCount,
-            runRate: crr,
-            overs: totalOvers,
-            four: totalFours,
-            six: totalSixes,
-            extra: extras,
-            batters,
-            bowlers,
-          },
-        };
+        setMatch((state) => {
+          const totalFours = batters
+            .map((batter) => batter.four)
+            .reduce((prev, next) => prev + next);
+          const totalSixes = batters
+            .map((batter) => batter.four)
+            .reduce((prev, next) => prev + next);
+          return {
+            ...state,
+            inning2: {
+              runs: totalRuns,
+              wickets: wicketCount,
+              runRate: crr,
+              overs: totalOvers,
+              four: totalFours,
+              six: totalSixes,
+              extra: extras,
+              batters,
+              bowlers,
+            },
+          };
+        });
+        endInningButton.textContent = "Reset";
+        setTimeout(() => {
+          console.log(JSON.stringify(match.inning2)); // Log the match data after 15 seconds
+        }, 15000);
+        setMatchEnded(true);
       }
-    };
-
-    if (inningNo === 1) {
-      setMatch((state) => ({
-        ...state,
-        ...calculateInningData(),
-      }));
-      setInningNo(2);
-    } else {
-      setMatch((state) => ({
-        ...state,
-        ...calculateInningData(),
-      }));
-      endInningButton.textContent = "Reset";
-      setMatchEnded(true);
     }
-
-    // Clear all the states here (the set functions have been removed for clarity)
-
-    // Disable relevant elements if needed
-    const bowlerNameElement = document.querySelector(
-      ".react-autosuggest__input"
-    );
-    bowlerNameElement.disabled = false;
-    const batter1NameElement = document.getElementById("batter1Name");
-    batter1NameElement.value = "";
-    batter1NameElement.disabled = false;
-    const batter2NameElement = document.getElementById("batter2Name");
-    batter2NameElement.value = "";
-    batter2NameElement.disabled = false;
-    setStrikeValue("strike");
-    endInningButton.disabled = true;
   };
 
   const handleBatter1Blur = (e) => {
@@ -312,7 +391,6 @@ const ScoreBoard = () => {
       setBattingOrder((order) => order + 1);
     }
   };
-
   const handleBatter2Blur = (e) => {
     let name = e.target.value;
     name = name.charAt(0).toUpperCase() + name.slice(1);
@@ -367,31 +445,6 @@ const ScoreBoard = () => {
         }
       }
     }
-  };
-  const onSuggestionsFetchRequested = (param) => {
-    const inputValue = param.value.trim().toLowerCase();
-    const suggestionArr =
-      inputValue.length === 0
-        ? []
-        : bowlers.filter((bowlerObj) =>
-            bowlerObj.name.toLowerCase().includes(inputValue)
-          );
-    setSuggestions(suggestionArr);
-  };
-  const getSuggestionValue = (suggestion) => {
-    setBowler({
-      id: suggestion.id,
-      name: suggestion.name,
-    });
-    setNameSuggested(true);
-    return suggestion.name;
-  };
-  const inputProps = {
-    value: inputBowler,
-    onChange: (e, { newValue }) => {
-      setInputBowler(newValue);
-    },
-    onBlur: handleBowlerBlur,
   };
   const overCompleted = (runsByOverParam, currentRunStackParam) => {
     const bowlerNameElement = document.querySelector(
@@ -1081,7 +1134,7 @@ const ScoreBoard = () => {
       scoreTypesButtons[i].disabled = false;
     }
   };
-
+  // * =============================================================
   if (
     batter1.name !== undefined &&
     batter2.name !== undefined &&
@@ -1116,6 +1169,7 @@ const ScoreBoard = () => {
     // For Message only
     if (wicketCount < 10 && overCount <= maxOver && totalRuns >= target) {
       winningMessage = `${chessingTeam} won by ${10 - wicketCount} wickets`;
+    
       endMatch();
     }
     if ((wicketCount >= 10 || overCount >= maxOver) && totalRuns < target - 1) {
@@ -1127,11 +1181,13 @@ const ScoreBoard = () => {
       endMatch();
     }
   }
+  // ===========================================================================================
+
   // Jsx for Sub Components...
   const welcomeContent = (
     <>
       <div></div>
-      <div>Welcome to Gully Cricket Score Board</div>
+      <div>Cricket Score Board</div>
       <div></div>
     </>
   );
@@ -1299,7 +1355,6 @@ const ScoreBoard = () => {
             </thead>
             <tbody>
               <tr>
-                {/* Todo : input */}
                 <td
                   className="score-types"
                   style={{ display: "flex", alignItems: "center" }}
@@ -1315,13 +1370,7 @@ const ScoreBoard = () => {
                       style={{ padding: "0 4px 0 2px" }}
                     />
                   </span>
-                  <input
-                    type="text"
-                    id="batter1Name"
-                    className="batter-name"
-                    onBlur={handleBatter1Blur}
-                  />
-                  {/* <select
+                  <select
                     id="batter1Name"
                     className="batter-name"
                     value={player1Team}
@@ -1329,14 +1378,18 @@ const ScoreBoard = () => {
                       setPlayer1Team(e.target.value);
                     }}
                     onBlur={handleBatter1Blur}
+                    style={{ width: "300px", padding: 4, borderRadius: "4px" }}
                   >
-                    <option value="">Select</option>
-                    {team1Detail.map((player) => (
-                      <option key={player._id} value={player.value}>
+                    <option value={""}>Select</option>
+                    {batting_Details_Current.map((player, index) => (
+                      <option
+                        key={player.value + "p" + index}
+                        value={player.value}
+                      >
                         {player.value}
                       </option>
                     ))}
-                  </select> */}
+                  </select>
                   <IconButton
                     color="primary"
                     className="icon-button"
@@ -1361,7 +1414,10 @@ const ScoreBoard = () => {
                 </td>
               </tr>
               <tr>
-                <td className="score-types">
+                <td
+                  className="score-types"
+                  style={{ display: "flex", alignItems: "center" }}
+                >
                   <span id="non-strike">
                     <Radio
                       size="small"
@@ -1373,13 +1429,7 @@ const ScoreBoard = () => {
                       style={{ padding: "0 4px 0 2px" }}
                     />
                   </span>
-                  <input
-                    type="text"
-                    id="batter2Name"
-                    className="batter-name"
-                    onBlur={handleBatter2Blur}
-                  />
-                  {/* <select
+                  <select
                     id="batter2Name"
                     className="batter-name"
                     value={player2Team}
@@ -1388,14 +1438,18 @@ const ScoreBoard = () => {
                       const player = e.target.value;
                       setPlayer2Team(player);
                     }}
+                    style={{ width: "300px", padding: 4, borderRadius: "4px" }}
                   >
-                    <option value="">Select</option>
-                    {team1Detail.map((player) => (
-                      <option key={player._id} value={player.value}>
+                    <option value={""}>Select</option>
+                    {batting_Details_Current.map((player, index) => (
+                      <option
+                        key={player.value + "z" + index}
+                        value={player.value}
+                      >
                         {player.value}
                       </option>
                     ))}
-                  </select> */}
+                  </select>
                   <IconButton
                     color="primary"
                     className="icon-button"
@@ -1424,35 +1478,25 @@ const ScoreBoard = () => {
         </div>
         <div className="bowler-container">
           <div className="bowler">
-            Bowler:
-            <Autosuggest
-              suggestions={suggestions}
-              onSuggestionsFetchRequested={onSuggestionsFetchRequested}
-              onSuggestionsClearRequested={() => {
-                setSuggestions([]);
+            <Typography variant="body">Bowler:</Typography>
+            <select
+              className="react-autosuggest__input"
+              value={inputBowler}
+              onBlur={handleBowlerBlur}
+              onChange={(e) => {
+                const event = e.target.value;
+                
+                setInputBowler(event);
               }}
-              getSuggestionValue={getSuggestionValue}
-              renderSuggestion={(suggestion) => <div>{suggestion.name}</div>}
-              inputProps={inputProps}
-            />
-            {/* <select
-                   className="react-autosuggest__input"
-                   value={inputBowler}
-                   onBlur={handleBowlerBlur}
-                    onChange={(e) => {
-                      // console.log(newValue)
-                      const event = e.target.value
-                      console.log("event :",event)
-                      setInputBowler(event);
-                    }}
-                  >
-                    <option value="">Select</option>
-                    {team2Detail.map((player) => (
-                      <option key={player._id} value={player.value}>
-                        {player.value}
-                      </option>
-                    ))}
-                  </select> */}
+              style={{ width: "300px", padding: 4, borderRadius: "4px" }}
+            >
+              <option value={""}>Select</option>
+              {blowing_Details_Current.map((player, index) => (
+                <option key={player.value + "b" + index} value={player.value}>
+                  {player.value}
+                </option>
+              ))}
+            </select>
             <IconButton
               color="primary"
               className="icon-button"

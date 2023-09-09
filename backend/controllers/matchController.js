@@ -55,17 +55,13 @@ export const updateMatch = asyncHandler(async (req, res) => {
     winnerTeamName,
   } = req.body;
   const match = await Match.findById(req.params.id);
-
+  console.log(req.body)
   if (match) {
-    match.matchName = matchName;
-    match.location = location;
-    match.date = date;
-    match.overs = overs;
-    match.team1name = team1name;
-    match.team2name = team2name;
+    
     match.winnerTeamName = winnerTeamName;
 
     const updatedMatch = await match.save();
+    console.log(updatedMatch);
     res.json(updatedMatch);
   } else {
     res.status(404).json({ message: "Match not found" });

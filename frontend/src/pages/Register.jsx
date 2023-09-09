@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import axios from "axios";
-import { useNavigate} from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 import {
   Alert,
   Box,
@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { mainBox, subPaper, typTitle } from "../styles/login";
+import { DOMAIN_NAME, projectTitle } from "../constants";
 
 const validationSchema = yup.object({
   name: yup.string("Enter your Name").required("Name is required"),
@@ -29,8 +30,8 @@ const validationSchema = yup.object({
     .required("Password is required"),
 });
 const Register = () => {
-  // Routes 
-  const Routes =useNavigate() 
+  // Routes
+  const Routes = useNavigate();
   // Setting State
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -54,7 +55,7 @@ const Register = () => {
           },
         };
         const { data } = await axios.post(
-          "http://localhost:5000/api/users/register",
+          DOMAIN_NAME + "/api/users/register",
           { name: values.name, email: values.email, password: values.password },
           config
         );
@@ -69,7 +70,9 @@ const Register = () => {
   });
   return (
     <Box sx={mainBox}>
-      <Typography variant="h4" fontWeight={700} my={4}>Gully Cricket Tournaments</Typography>
+      <Typography variant="h4" fontWeight={700} my={4}>
+        {projectTitle}
+      </Typography>
       <Paper sx={subPaper}>
         <Typography variant="h3" sx={typTitle}>
           Register

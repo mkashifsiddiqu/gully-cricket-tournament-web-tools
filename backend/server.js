@@ -12,6 +12,7 @@ import colors from 'colors'
 
 // * Importing Routes files
 // import productRoutes from './routes/productRoutes.js'
+import playerRoutes from './routes/playerRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import teamRoutes from "./routes/teamRoutes.js"
 import matchRoutes from "./routes/matchRoutes.js"
@@ -41,14 +42,10 @@ app.use(express.json()) // ? that will allows us to accept Json data in the body
 app.get('/', (req, res) => {
   res.send('API is running..........')
 })
+app.use('/api/player', playerRoutes); // team
 app.use('/api/teams', teamRoutes); // team
 app.use('/api/users', userRoutes)  // user
 app.use('/api/matches', matchRoutes);
-
-// * for making the upload folder Static
-// const __dirname = path.resolve()
-// app.use('/uploads', express.static(path.join(__dirname, '/uploads')))
-
 app.use(notFound)
 app.use(errorHandler)
 

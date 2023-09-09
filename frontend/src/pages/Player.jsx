@@ -20,8 +20,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useState } from "react";
 import { TreeView, TreeItem } from "@mui/lab";
 import axios from "axios";
+import { DOMAIN_NAME } from "../constants";
 
-const DOMAIN_NAME = "http://localhost:5000";
 const Player = () => {
   //for Toast
   const [open, setOpen] = useState(false);
@@ -39,18 +39,26 @@ const Player = () => {
   // Main State for fu functionality
   const [teamName, setTeamName] = useState("");
   const [teamList, setTeamList] = useState([]);
-  const [playerList, setPlayerList] = useState([]);
-  const [selectPlayer, setSelectPlayer] = useState();
+  const [playerList, setPlayerList] = useState([{ _id: "", value: "" }]);
   const [inputPlayer, setInputPlayer] = useState([]);
 
   const addInputFieldPlayer = () => {
-    setInputPlayer((prevList) => [
-      ...prevList,
-      {
-        type: "text",
-        value: "",
-      },
-    ]);
+    const maxInputPlayerLength = 11;
+
+    setInputPlayer((prevList) => {
+      if (prevList.length < maxInputPlayerLength) {
+        return [
+          ...prevList,
+          {
+            type: "text",
+            value: "",
+          },
+        ];
+      } else {
+        alert("Reached the maximum Max Player Length" + maxInputPlayerLength);
+        return prevList; 
+      }
+    });
   };
   const handleChange = (e, index) => {
     e.preventDefault();
@@ -61,13 +69,10 @@ const Player = () => {
       return newList;
     });
   };
-  useEffect(() => {
-    console.log(playerList);
-  }, [playerList]);
+
   // Handle AutoComplete for Players
   const handlePlayersList = (event, newValue) => {
     setPlayerList([]);
-    setSelectPlayer(newValue);
     setTeamName(newValue.teamName);
     if (newValue.players.length !== 0) {
       setPlayerList(newValue.players);
@@ -89,9 +94,7 @@ const Player = () => {
       console.error("Error fetching teams:", error);
     }
   };
-  useEffect(() => {
-    fetchTeams();
-  }, []);
+
   // *===============================================
   //  REST END-POINT  FOR TEAM
   //  ===============================================
@@ -116,7 +119,7 @@ const Player = () => {
         `${DOMAIN_NAME}/api/teams/player-teams/${teamName}/players`,
         { playerList }
       );
-       console.log(response.data)
+      console.log(response.data);
       // Clear State
       setPlayerList([]);
       setInputPlayer([]);
@@ -130,66 +133,41 @@ const Player = () => {
     }
   };
   // Delete Any Player
-  // const handleDeletePlayer = async (playerId, index) => {
-  //   // database store player
-  //   if (playerId !== undefined && index) {
-  //     try {
-  //       const res = await axios.delete(
-  //         `${DOMAIN_NAME}/api/teams/player-teams/${teamName}/players/${playerId}`
-  //       );
-  //       console.log(res.data);
-  //       setStatus("Player is Deleted from "+teamName);
-  //       handleClick();
-  //       const updatedPlayers = playerList.filter(
-  //         (player) => player._id !== playerId
-  //       );
-  //       setPlayerList(updatedPlayers);
-  //       // remove Input field
-  //       setInputPlayer((prevList) => {
-  //         const updatedList = prevList.filter((_, i) => i !== index);
-  //         return updatedList;
-  //       });
-
-  //       fetchTeams();
-  //     } catch (error) {
-  //       console.error("Error deleting player:", error);
-  //     }
-  //   } else if (index !== -1) {
-  //     // delete player that are in memory
-  //     // Delete Empty felid
-  //     console.log("Player index ", index);
-  //     setInputPlayer((prevList) => {
-  //       const updatedList = prevList.filter((_, i) => i !== index);
-  //       return updatedList;
-  //     });
-  //     setPlayerList((prevList) => {
-  //       const updatedList = prevList.filter((_, i) => i !== index);
-  //       return updatedList;
-  //     });
-  //   }
-  // };
-  const handleDeletePlayer = async (playerId, index) => {
+  const handleDeletePlayer = async (player, index) => {
     try {
-      if (playerId !== undefined) {
+      if (player._id !== undefined) {
         // Delete player from the database
         const res = await axios.delete(
-          `${DOMAIN_NAME}/api/teams/player-teams/${teamName}/players/${playerId}`
+          `${DOMAIN_NAME}/api/teams/player-teams/${teamName}/players/${player._id}`
         );
         console.log(res.data);
         setStatus("Player is Deleted from " + teamName);
         handleClick();
+
+        setInputPlayer((prevList) => prevList.filter((_, i) => i !== index));
+        setPlayerList((prevList) =>
+          prevList.filter((p) => p._id !== player._id)
+        );
+      } else {
+        setInputPlayer((prevList) => prevList.filter((_, i) => i !== index));
+        setPlayerList((prevList) =>
+          prevList.filter((p) => p.value !== player.value)
+        );
       }
-      // Remove player from the state (whether in database or in-memory)
-      setInputPlayer((prevList) => prevList.filter((_, i) => i !== index));
-      const updatedPlayers = playerList.filter(
-        (player) => player && player._id !== playerId
-      );
-      setPlayerList(updatedPlayers);
+
+      // Check if playerList is empty, and reset input if needed
+      if (playerList.length === 0) {
+        setInputPlayer([]);
+      }
     } catch (error) {
-      console.error("Error deleting player:", error);
+      setInputPlayer((prevList) => prevList.filter((_, i) => i !== index));
+      setPlayerList((prevList) => prevList.filter((_, i) => i !== index));
     }
   };
 
+  useEffect(() => {
+    fetchTeams();
+  }, []);
   return (
     <>
       <Box>
@@ -230,9 +208,7 @@ const Player = () => {
                   onChange={(e) => handleChange(e, index)}
                 />
                 <IconButton
-                  onClick={() =>
-                    handleDeletePlayer(playerList[index]._id, index)
-                  }
+                  onClick={() => handleDeletePlayer(playerList[index], index)}
                 >
                   <CloseIcon />
                 </IconButton>
@@ -261,7 +237,7 @@ const Player = () => {
       <Divider />
       <Box sx={{ my: 2 }}>
         <Typography variant="h4" fontWeight={700}>
-          Registered Team
+          Registered Teams
         </Typography>
         <Grid container spacing={1} sx={{ mt: 1 }}>
           {teamList.map((team, index) => (
@@ -329,7 +305,7 @@ const Player = () => {
         open={open}
         autoHideDuration={1000}
         onClose={handleClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert onClose={handleClose} severity="success" sx={{ width: "100%" }}>
           {status}

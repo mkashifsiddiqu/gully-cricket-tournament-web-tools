@@ -18,6 +18,7 @@ import {
   RadioGroup,
   TextField,
   MenuItem,
+  Divider,
 } from "@mui/material";
 import { DOMAIN_NAME } from "../constants";
 // Validation
@@ -87,6 +88,11 @@ const Matches = ({ touched, errors, values, handleChange, handleBlur }) => {
 };
 const Team = ({ touched, errors, values, handleChange, handleBlur }) => {
   const [listTeam, setListTeam] = React.useState([]);
+  const [scheduleMatrix, setScheduleMatrix] = React.useState([]);
+  const [show, setHide] = React.useState(true);
+  const handleShowHidde = () => {
+    setHide(!show);
+  };
   const fetchTeams = async () => {
     try {
       const response = await axios.get(DOMAIN_NAME + "/api/teams");
@@ -96,60 +102,117 @@ const Team = ({ touched, errors, values, handleChange, handleBlur }) => {
     }
   };
   React.useEffect(() => {
+    const savedData = localStorage.getItem("scheduleMatch");
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      setScheduleMatrix(parsedData.scheduleMatrix);
+    }
     fetchTeams();
   }, []);
   return (
-    <Box
-      component="form"
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        p: 1,
-        "& .MuiTextField-root": { m: 1, width: "25ch" },
-      }}
-      gap={4}
-    >
-      <Typography fontSize={20} fontWeight={700}>
-        Select The Name of Teams for Match!
-      </Typography>
-      <TextField
-        label="Team-1"
-        id="team1"
-        name="team1"
-        value={values?.team1}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        helperText={errors?.team1 && touched?.team1 && errors?.team1}
-        error={errors?.team1 && touched?.team1}
-        select
+    <Box sx={{ display: "flex", justifyContent: "space-between" }} gap={2}>
+      {scheduleMatrix.length !== 0 && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Button variant="outlined" onClick={handleShowHidde}>
+            {show ? "hide" : "show"} Schedule
+          </Button>
+        </Box>
+      )}
+
+      {show && scheduleMatrix.length !== 0 && (
+        <>
+          {" "} 
+          <hr />
+          <Box sx={{ overflow: "hidden", flex: 1 }}>
+            <Typography variant="h5" fontWeight={600} align="center" mb={1}>
+              Schedule Match
+            </Typography>
+            {
+              scheduleMatrix.map((scheduleTeam, roundIndex) => (
+                <Box
+                  key={roundIndex}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <Typography variant="h6" fontWeight={600}>
+                    Round {roundIndex + 1}
+                  </Typography>
+
+                  {scheduleTeam.map((match, matchIndex) => (
+                    <Box key={matchIndex} display="flex" gap={1}>
+                      <Typography variant="h6" fontWeight={500}>
+                        {match}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              ))}
+          </Box>
+          <hr />
+        </>
+      )}
+      
+      <Box
+        component="form"
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          p: 1,
+          "& .MuiTextField-root": { m: 1, width: "25ch" },
+        }}
+        gap={4}
       >
-        {listTeam.map((option, index) => (
-          <MenuItem key={index + 3} value={option.teamName}>
-            {option.teamName}
-          </MenuItem>
-        ))}
-      </TextField>
-      <Typography fontWeight={900} fontStyle={"italic"}>
-        VS
-      </Typography>
-      <TextField
-        label="Team-2"
-        id="team2"
-        name="team2"
-        value={values.team2}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        helperText={errors.team2 && touched.team2 && errors.team2}
-        error={errors.team2 && touched.team2}
-        select
-      >
-        {listTeam.map((option, index) => (
-          <MenuItem key={index + 2} value={option.teamName}>
-            {option.teamName}
-          </MenuItem>
-        ))}
-      </TextField>
+        <Typography fontSize={20} fontWeight={700}>
+          Select The Name of Teams for Match!
+        </Typography>
+        <TextField
+          label="Team-1"
+          id="team1"
+          name="team1"
+          value={values?.team1}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          helperText={errors?.team1 && touched?.team1 && errors?.team1}
+          error={errors?.team1 && touched?.team1}
+          select
+        >
+          {listTeam.map((option, index) => (
+            <MenuItem key={index + 3} value={option.teamName}>
+              {option.teamName}
+            </MenuItem>
+          ))}
+        </TextField>
+        <Typography fontWeight={900} fontStyle={"italic"}>
+          VS
+        </Typography>
+        <TextField
+          label="Team-2"
+          id="team2"
+          name="team2"
+          value={values.team2}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          helperText={errors.team2 && touched.team2 && errors.team2}
+          error={errors.team2 && touched.team2}
+          select
+        >
+          {listTeam.map((option, index) => (
+            <MenuItem key={index + 2} value={option.teamName}>
+              {option.teamName}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Box>
     </Box>
   );
 };
@@ -298,7 +361,7 @@ export default function FormStepper() {
               <form onSubmit={handleSubmit}>
                 <Box
                   sx={{
-                    height: "65vh",
+                    minHeight: "65vh",
                     border: "4px solid #ebebeb",
                     m: 2,
                     borderRadius: "10px",

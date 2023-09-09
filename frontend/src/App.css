@@ -41,3 +41,22 @@ a {
   background-position: 0% 100%;
   transition: background-position .7s, background-size .5s ease-in-out;
 }
+
+::-webkit-scrollbar {
+  width: 15px;
+  height: 10px;
+  overflow-y: scroll;
+  display: inline-block;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.3);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(left, rgba(0,0,0,0.1), rgba(0,0,0,0.15));
+  border: 3px solid rgba(0,0,0,0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(left, rgba(0,0,0,0.3), rgba(0,0,0,0.4));
+}
+
